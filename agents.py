@@ -2,15 +2,13 @@
 Create specialist agents for invoices and company entities.
 """
 
-from dotenv import load_dotenv
-
-# Load environment variables from .env.
-load_dotenv()
-
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.prebuilt import create_react_agent
 from langgraph.checkpoint.memory import MemorySaver
 from mcp_tools import query_invoices, query_entity
+from dotenv import load_dotenv
+
+load_dotenv()
 
 model = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0)
 memory = MemorySaver()

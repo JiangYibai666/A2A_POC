@@ -1,4 +1,3 @@
-# main.py
 """
 Run sample flows for the full multi-agent system.
 """

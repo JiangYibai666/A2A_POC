@@ -1,4 +1,3 @@
-# a2a_server.py
 """
 Expose LangGraph agents as an A2A service so other agents can discover and call them.
 """
@@ -8,7 +7,6 @@ from typing import Any
 from flask import Flask, request, jsonify
 
 from agents import invoice_agent, entity_agent
-
 
 app = Flask(__name__)
 

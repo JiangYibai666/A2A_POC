@@ -1,4 +1,3 @@
-# mcp_tools.py
 """
 Mock MCP tool calls. In a real deployment these would call actual API services.
 """

@@ -1,4 +1,3 @@
-# supervisor_app.py
 """
 Supervisor-based multi-agent system that coordinates specialist agents.
 """
