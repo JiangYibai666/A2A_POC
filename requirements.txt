@@ -1,0 +1,9 @@
+langchain
+langchain-google-genai
+langgraph
+sqlalchemy
+psycopg2-binary
+pydantic
+python-dotenv
+fastapi
+uvicorn

@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A2A POC - Frontend Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .status {
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+
+        .status.info {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .status.success {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+
+        .status.error {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            background: #f9f9f9;
+        }
+
+        .option-card {
+            margin: 15px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: white;
+        }
+
+        .flight-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 10px 0;
+        }
+
+        .flight-block {
+            padding: 10px;
+            background: #f0f7ff;
+            border-radius: 4px;
+        }
+
+        .flight-block h4 {
+            margin: 0 0 10px 0;
+            color: #667eea;
+        }
+
+        .field {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .field-label {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .hotel-block {
+            padding: 10px;
+            background: #fff9e6;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        .hotel-block h4 {
+            margin: 0 0 10px 0;
+            color: #f57c00;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎫 A2A POC Frontend Test</h1>
+
+        <div class="section">
+            <p>This is a simple test page used to verify that the frontend and backend API are integrated correctly.</p>
+            <div class="field" style="margin-bottom:12px; display:block;">
+                <span class="field-label" style="display:block; margin-bottom:6px;">Scenario</span>
+                <select id="scenario-select"
+                    style="width:100%; padding:10px; border-radius:8px; border:1px solid #d0d7de; background:#fff;">
+                    <option value="Book me a flight and hotel from Singapore to Shanghai on May 1, returning on May 4">
+                        Standard round trip with hotel</option>
+                    <option value="Book me a one-way flight from Bangkok to Beijing on June 10">One-way Bangkok to
+                        Beijing</option>
+                    <option value="Book me a flight from Thailand to China on June 10">Country-level route matching
+                    </option>
+                    <option value="Book me a flight and hotel from Bangkok to Beijing on June 10, returning on June 14">
+                        Bangkok to Beijing with hotel</option>
+                    <option value="Book me a flight from Singapore to China on June 10">Singapore to China multi-city
+                        destination</option>
+                    <option value="Book me a round trip from Hong Kong to Bangkok on June 14, returning on June 15">
+                        Short round trip Hong Kong to Bangkok</option>
+                    <option value="I need a hotel after I arrive in Beijing on June 10 and I fly back on June 14">Hotel
+                        timing match follow-up</option>
+                    <option value="Find me a hotel in Beijing from June 10 to June 14">Hotel-only Beijing stay</option>
+                    <option value="Show me hotel options in Shanghai for June 10 to June 12">Hotel-only Shanghai stay
+                    </option>
+                </select>
+            </div>
+            <button onclick="testAPI()">
+                <span id="btn-text">Test API</span>
+            </button>
+        </div>
+
+        <div class="section">
+            <h2>Suggested English Use Cases</h2>
+            <div class="field">1. Standard booking flow: flight and hotel with a return date</div>
+            <div class="field">2. One-way flight search: only outbound options expected</div>
+            <div class="field">3. Country-level routing: Thailand to China should fan out to multiple destination
+                airports</div>
+            <div class="field">4. Hotel-only search: hotel results without any flight requirement</div>
+            <div class="field">5. Hotel timing validation: hotel must fit arrival and departure windows</div>
+            <div class="field">6. Follow-up refinement: destination change, cheapest option, or booking confirmation
+            </div>
+        </div>
+
+        <div id="status-area"></div>
+        <div id="result-area"></div>
+    </div>
+
+    <script>
+        const statusArea = document.getElementById('status-area');
+        const resultArea = document.getElementById('result-area');
+        const scenarioSelect = document.getElementById('scenario-select');
+
+        function addStatus(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.textContent = message;
+            statusArea.appendChild(div);
+        }
+
+        function clearStatus() {
+            statusArea.innerHTML = '';
+            resultArea.innerHTML = '';
+        }
+
+        async function testAPI() {
+            clearStatus();
+            const btn = document.querySelector('button');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> Testing...';
+
+            try {
+                addStatus('📡 Connecting to the backend API...', 'info');
+
+                const response = await fetch('http://localhost:8000/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user_input: scenarioSelect.value
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                addStatus(`🧪 Scenario: ${scenarioSelect.options[scenarioSelect.selectedIndex].text}`, 'info');
+                addStatus(`✅ API connection successful. Returned ${data.combined_options.length} options.`, 'success');
+
+                if (data.llm_summary) {
+                    addStatus(`📝 Summary: ${data.llm_summary}`, 'info');
+                }
+
+                if (data.combined_options && data.combined_options.length > 0) {
+                    renderOptions(data.combined_options, data.intent || '');
+                } else {
+                    addStatus('❌ The API returned no options.', 'error');
+                }
+            } catch (error) {
+                addStatus(`❌ Connection failed: ${error.message}`, 'error');
+                console.error('Error:', error);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Test API';
+            }
+        }
+
+        function renderOptions(options, intent) {
+            const div = document.createElement('div');
+            div.className = 'section';
+            div.innerHTML = '<h2>📊 Search Results</h2>';
+
+            options.slice(0, 4).forEach((option, index) => {
+                const card = document.createElement('div');
+                card.className = 'option-card';
+
+                const outbound = option.outbound;
+                const returnFlight = option.return;
+                const hotel = option.hotel;
+
+                card.innerHTML = `
+                    <h3>Option ${index + 1}</h3>
+                    <div class="flight-info">
+                        <div class="flight-block" ${intent === 'hotel_only' ? 'style="display:none"' : ''}>
+                            <h4>✈ Outbound Flight</h4>
+                            <div class="field"><span class="field-label">Flight:</span> ${outbound.flight_number}</div>
+                            <div class="field"><span class="field-label">Airline:</span> ${outbound.airline}</div>
+                            <div class="field"><span class="field-label">Departure:</span> ${outbound.departure_time}</div>
+                            <div class="field"><span class="field-label">Arrival:</span> ${outbound.arrival_time}</div>
+                            <div class="field"><span class="field-label">Duration:</span> ${outbound.duration}</div>
+                            <div class="field"><span class="field-label">Price:</span> $${outbound.price}</div>
+                        </div>
+                        <div class="flight-block" ${intent === 'hotel_only' ? 'style="display:none"' : ''}>
+                            <h4>✈ Return Flight</h4>
+                            <div class="field"><span class="field-label">Flight:</span> ${returnFlight.flight_number}</div>
+                            <div class="field"><span class="field-label">Airline:</span> ${returnFlight.airline}</div>
+                            <div class="field"><span class="field-label">Departure:</span> ${returnFlight.departure_time}</div>
+                            <div class="field"><span class="field-label">Arrival:</span> ${returnFlight.arrival_time}</div>
+                            <div class="field"><span class="field-label">Duration:</span> ${returnFlight.duration}</div>
+                            <div class="field"><span class="field-label">Price:</span> $${returnFlight.price}</div>
+                        </div>
+                    </div>
+                    <div class="hotel-block">
+                        <h4>${intent === 'hotel_only' ? '🏨 Hotel Stay' : '🏨 Hotel'}</h4>
+                        <div class="field"><span class="field-label">Name:</span> ${hotel.name}</div>
+                        <div class="field"><span class="field-label">Area:</span> ${hotel.area}</div>
+                        <div class="field"><span class="field-label">Stars:</span> ${hotel.stars}</div>
+                        <div class="field"><span class="field-label">Check-in:</span> ${hotel.checkin_time}</div>
+                        <div class="field"><span class="field-label">Check-out:</span> ${hotel.checkout_time}</div>
+                        <div class="field"><span class="field-label">Price:</span> ${hotel.price}</div>
+                    </div>
+                `;
+                div.appendChild(card);
+            });
+
+            resultArea.appendChild(div);
+        }
+
+        // Auto test on load
+        window.addEventListener('load', () => {
+            addStatus('⏳ Page loaded. Click the button to test the API...', 'info');
+        });
+    </script>
+</body>
+
+</html>

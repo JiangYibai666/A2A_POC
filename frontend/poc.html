@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>A2A POC · Agent Coordination Platform</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Syne:wght@400;600;700;800&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #080a0e;
+            --panel: #0d1017;
+            --card: #111620;
+            --card2: #161d2a;
+            --border: rgba(255, 255, 255, 0.07);
+            --border2: rgba(255, 255, 255, 0.12);
+            --text: #d4dae8;
+            --muted: #5a6478;
+            --faint: #252d3d;
+            --mono: 'JetBrains Mono', monospace;
+            --display: 'Syne', sans-serif;
+
+            --orch: #a78bfa;
+            --orch-bg: rgba(167, 139, 250, 0.08);
+            --orch-dim: rgba(167, 139, 250, 0.15);
+            --flight: #34d399;
+            --flight-bg: rgba(52, 211, 153, 0.08);
+            --flight-dim: rgba(52, 211, 153, 0.15);
+            --hotel: #fb923c;
+            --hotel-bg: rgba(251, 146, 60, 0.08);
+            --hotel-dim: rgba(251, 146, 60, 0.15);
+            --user: #60a5fa;
+            --user-bg: rgba(96, 165, 250, 0.08);
+            --sys: #f59e0b;
+            --ok: #34d399;
+            --err: #f87171;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 13px;
+            display: grid;
+            grid-template-rows: 52px 1fr;
+            grid-template-columns: 260px 1fr 300px;
+            grid-template-areas:
+                "topbar topbar topbar"
+                "sidebar main log";
+        }
+
+        /* ─── TOPBAR ─── */
+        #topbar {
+            grid-area: topbar;
+            background: var(--panel);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 16px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .tb-logo {
+            font-family: var(--display);
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tb-logo-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--orch);
+            box-shadow: 0 0 8px var(--orch);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1)
+            }
+
+            50% {
+                opacity: 0.6;
+                transform: scale(0.85)
+            }
+        }
+
+        .tb-sep {
+            width: 1px;
+            height: 20px;
+            background: var(--border);
+        }
+
+        .tb-tag {
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .tb-status {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .status-dot.on {
+            background: var(--ok);
+            box-shadow: 0 0 6px var(--ok);
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.off {
+            background: var(--muted);
+        }
+
+        .status-pill.active {
+            color: var(--ok);
+        }
+
+        .status-pill.inactive {
+            color: var(--muted);
+        }
+
+        /* ─── SIDEBAR ─── */
+        #sidebar {
+            grid-area: sidebar;
+            background: var(--panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sb-section {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sb-label {
+            font-size: 9px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 12px;
+        }
+
+        .agent-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 10px;
+            border-radius: 6px;
+            cursor: default;
+            margin-bottom: 4px;
+            transition: background 0.15s;
+            border: 1px solid transparent;
+        }
+
+        .agent-item:hover {
+            background: var(--faint);
+        }
+
+        .agent-item.active-agent {
+            background: var(--orch-bg);
+            border-color: var(--orch-dim);
+        }
+
+        .agent-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .agent-indicator.pulse {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .ai-orch {
+            background: var(--orch);
+            box-shadow: 0 0 6px var(--orch);
+        }
+
+        .ai-flight {
+            background: var(--flight);
+            box-shadow: 0 0 6px var(--flight);
+        }
+
+        .ai-hotel {
+            background: var(--hotel);
+            box-shadow: 0 0 6px var(--hotel);
+        }
+
+        .ai-idle {
+            background: var(--muted);
+            box-shadow: none;
+        }
+
+        .agent-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .agent-name {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .agent-state {
+            font-size: 10px;
+            color: var(--muted);
+            margin-top: 1px;
+        }
+
+        .agent-state.busy {
+            color: var(--sys);
+        }
+
+        .agent-state.done {
+            color: var(--ok);
+        }
+
+        /* DB status */
+        .db-block {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 10px;
+            background: var(--card);
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        .db-icon {
+            width: 28px;
+            height: 28px;
+            background: var(--user-bg);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .db-label {
+            font-size: 11px;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .db-sub {
+            font-size: 10px;
+            color: var(--muted);
+            margin-top: 1px;
+        }
+
+        /* stats */
+        .stat-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .stat-box {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px 12px;
+        }
+
+        .stat-val {
+            font-size: 22px;
+            font-weight: 600;
+            font-family: var(--display);
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .stat-lbl {
+            font-size: 9px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        /* ─── MAIN ─── */
+        #main {
+            grid-area: main;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--bg);
+        }
+
+        /* A2A Flow visualizer */
+        #flow-viz {
+            padding: 20px 24px 0;
+            flex-shrink: 0;
+        }
+
+        .viz-title {
+            font-size: 9px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 14px;
+        }
+
+        .flow-agents {
+            display: grid;
+            grid-template-columns: 1fr 28px 1fr 28px 1fr;
+            gap: 0;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+
+        .fa-box {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 14px;
+            position: relative;
+            transition: border-color 0.3s, background 0.3s;
+        }
+
+        .fa-box.active {
+            border-color: var(--orch-dim);
+            background: var(--orch-bg);
+        }
+
+        .fa-box.active.flight-active {
+            border-color: var(--flight-dim);
+            background: var(--flight-bg);
+        }
+
+        .fa-box.active.hotel-active {
+            border-color: var(--hotel-dim);
+            background: var(--hotel-bg);
+        }
+
+        .fa-role {
+            font-size: 9px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .fa-role.orch {
+            color: var(--orch);
+        }
+
+        .fa-role.flight {
+            color: var(--flight);
+        }
+
+        .fa-role.hotel {
+            color: var(--hotel);
+        }
+
+        .fa-name {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 3px;
+        }
+
+        .fa-task {
+            font-size: 10px;
+            color: var(--muted);
+        }
+
+        .fa-task.busy {
+            color: var(--sys);
+        }
+
+        .fa-task.done {
+            color: var(--ok);
+        }
+
+        .flow-arrow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+        }
+
+        .arrow-line {
+            width: 100%;
+            height: 1px;
+            background: var(--border2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .arrow-line::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 40%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, var(--orch), transparent);
+            animation: flow-anim 2s linear infinite;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .arrow-line.active-flow::after {
+            opacity: 1;
+        }
+
+        .arrow-line.flight-flow::after {
+            background: linear-gradient(90deg, transparent, var(--flight), transparent);
+        }
+
+        .arrow-line.hotel-flow::after {
+            background: linear-gradient(90deg, transparent, var(--hotel), transparent);
+        }
+
+        @keyframes flow-anim {
+            from {
+                left: -40%
+            }
+
+            to {
+                left: 100%
+            }
+        }
+
+        .arrow-head {
+            color: var(--border2);
+            font-size: 10px;
+        }
+
+        .arrow-lbl {
+            font-size: 9px;
+            color: var(--muted);
+            letter-spacing: 0.06em;
+            text-align: center;
+        }
+
+        .arrow-lbl.active-lbl {
+            color: var(--orch);
+        }
+
+        .arrow-lbl.flight-lbl {
+            color: var(--flight);
+        }
+
+        .arrow-lbl.hotel-lbl {
+            color: var(--hotel);
+        }
+
+        /* Chat area */
+        #chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 24px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--faint) transparent;
+        }
+
+        #chat-area::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        #chat-area::-webkit-scrollbar-thumb {
+            background: var(--faint);
+            border-radius: 2px;
+        }
+
+        .msg {
+            display: flex;
+            gap: 10px;
+            animation: msg-in 0.25s ease-out;
+        }
+
+        @keyframes msg-in {
+            from {
+                opacity: 0;
+                transform: translateY(6px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .msg-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .msg-av-user {
+            background: var(--user-bg);
+            color: var(--user);
+            border: 1px solid rgba(96, 165, 250, 0.2);
+        }
+
+        .msg-av-orch {
+            background: var(--orch-bg);
+            color: var(--orch);
+            border: 1px solid rgba(167, 139, 250, 0.2);
+        }
+
+        .msg-av-flight {
+            background: var(--flight-bg);
+            color: var(--flight);
+            border: 1px solid rgba(52, 211, 153, 0.2);
+        }
+
+        .msg-av-hotel {
+            background: var(--hotel-bg);
+            color: var(--hotel);
+            border: 1px solid rgba(251, 146, 60, 0.2);
+        }
+
+        .msg-av-sys {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--sys);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .msg-body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .msg-meta {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .msg-sender {
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .msg-sender.user {
+            color: var(--user);
+        }
+
+        .msg-sender.orch {
+            color: var(--orch);
+        }
+
+        .msg-sender.flight {
+            color: var(--flight);
+        }
+
+        .msg-sender.hotel {
+            color: var(--hotel);
+        }
+
+        .msg-sender.sys {
+            color: var(--sys);
+        }
+
+        .msg-time {
+            font-size: 9px;
+            color: var(--muted);
+        }
+
+        .msg-text {
+            font-size: 12px;
+            color: var(--text);
+            line-height: 1.7;
+            opacity: 0.9;
+        }
+
+        .msg-tag {
+            display: inline-block;
+            font-size: 9px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 1px 6px;
+            border-radius: 3px;
+            margin-right: 4px;
+            vertical-align: middle;
+        }
+
+        .tag-a2a {
+            background: rgba(167, 139, 250, 0.15);
+            color: var(--orch);
+        }
+
+        .tag-task {
+            background: rgba(52, 211, 153, 0.15);
+            color: var(--flight);
+        }
+
+        .tag-result {
+            background: rgba(251, 146, 60, 0.15);
+            color: var(--hotel);
+        }
+
+        .tag-db {
+            background: rgba(96, 165, 250, 0.15);
+            color: var(--user);
+        }
+
+        /* Result cards */
+        .result-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .result-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 14px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .result-card:hover {
+            border-color: var(--border2);
+            background: var(--card2);
+        }
+
+        .result-card.selected {
+            border-color: var(--flight);
+            background: var(--flight-bg);
+        }
+
+        .result-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--flight);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .result-card.selected::before {
+            opacity: 1;
+        }
+
+        .rc-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .rc-num {
+            font-size: 9px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .rc-price {
+            font-size: 13px;
+            font-weight: 600;
+            font-family: var(--display);
+            color: var(--sys);
+        }
+
+        .rc-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 11px;
+        }
+
+        .rc-item-label {
+            color: var(--muted);
+            margin-bottom: 2px;
+            font-size: 10px;
+        }
+
+        .rc-item-val {
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .rc-item-sub {
+            font-size: 10px;
+            color: var(--muted);
+        }
+
+        /* Input */
+        #input-area {
+            padding: 14px 24px 18px;
+            border-top: 1px solid var(--border);
+            background: var(--panel);
+            flex-shrink: 0;
+        }
+
+        .input-wrap {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        #user-input {
+            flex: 1;
+            background: var(--card);
+            border: 1px solid var(--border2);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--text);
+            outline: none;
+            resize: none;
+            min-height: 42px;
+            max-height: 100px;
+            line-height: 1.5;
+            transition: border-color 0.2s;
+        }
+
+        #user-input:focus {
+            border-color: rgba(167, 139, 250, 0.4);
+        }
+
+        #user-input::placeholder {
+            color: var(--muted);
+        }
+
+        #send-btn {
+            background: var(--orch);
+            border: none;
+            border-radius: 8px;
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: opacity 0.2s, transform 0.1s;
+            color: #1a1040;
+            font-size: 16px;
+        }
+
+        #send-btn:hover {
+            opacity: 0.85;
+        }
+
+        #send-btn:active {
+            transform: scale(0.95);
+        }
+
+        #send-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .input-hint {
+            font-size: 10px;
+            color: var(--muted);
+            margin-top: 7px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .hint-chip {
+            cursor: pointer;
+            padding: 2px 8px;
+            background: var(--faint);
+            border-radius: 4px;
+            transition: background 0.15s, color 0.15s;
+            white-space: nowrap;
+        }
+
+        .hint-chip:hover {
+            background: var(--card2);
+            color: var(--text);
+        }
+
+        /* ─── LOG PANEL ─── */
+        #log-panel {
+            grid-area: log;
+            background: var(--panel);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .log-header {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            font-size: 9px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .log-clear {
+            cursor: pointer;
+            color: var(--faint);
+            transition: color 0.15s;
+            font-size: 10px;
+            letter-spacing: 0.04em;
+            text-transform: none;
+        }
+
+        .log-clear:hover {
+            color: var(--muted);
+        }
+
+        #log-stream {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 0;
+            scrollbar-width: thin;
+            scrollbar-color: var(--faint) transparent;
+        }
+
+        #log-stream::-webkit-scrollbar {
+            width: 3px;
+        }
+
+        #log-stream::-webkit-scrollbar-thumb {
+            background: var(--faint);
+        }
+
+        .log-entry {
+            padding: 5px 14px;
+            font-size: 11px;
+            line-height: 1.5;
+            border-left: 2px solid transparent;
+            animation: log-in 0.15s ease-out;
+        }
+
+        @keyframes log-in {
+            from {
+                opacity: 0;
+                transform: translateX(4px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0)
+            }
+        }
+
+        .log-entry:hover {
+            background: var(--faint);
+        }
+
+        .log-time {
+            color: var(--muted);
+            margin-right: 6px;
+            font-size: 10px;
+        }
+
+        .log-entry.le-orch {
+            border-left-color: var(--orch);
+        }
+
+        .log-entry.le-flight {
+            border-left-color: var(--flight);
+        }
+
+        .log-entry.le-hotel {
+            border-left-color: var(--hotel);
+        }
+
+        .log-entry.le-db {
+            border-left-color: var(--user);
+        }
+
+        .log-entry.le-sys {
+            border-left-color: var(--sys);
+        }
+
+        .log-entry .le-actor {
+            font-weight: 500;
+            margin-right: 4px;
+        }
+
+        .le-orch .le-actor {
+            color: var(--orch);
+        }
+
+        .le-flight .le-actor {
+            color: var(--flight);
+        }
+
+        .le-hotel .le-actor {
+            color: var(--hotel);
+        }
+
+        .le-db .le-actor {
+            color: var(--user);
+        }
+
+        .le-sys .le-actor {
+            color: var(--sys);
+        }
+
+        .le-msg {
+            color: var(--muted);
+        }
+
+        /* DB writes panel */
+        .db-writes {
+            border-top: 1px solid var(--border);
+            padding: 10px 14px;
+            flex-shrink: 0;
+        }
+
+        .db-writes-title {
+            font-size: 9px;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        .db-write-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 10px;
+            animation: log-in 0.2s ease-out;
+        }
+
+        .db-write-item:last-child {
+            border-bottom: none;
+        }
+
+        .dbw-table {
+            color: var(--user);
+            font-weight: 500;
+        }
+
+        .dbw-op {
+            color: var(--muted);
+        }
+
+        .dbw-status {
+            color: var(--ok);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- TOPBAR -->
+    <div id="topbar">
+        <div class="tb-logo">
+            <div class="tb-logo-dot"></div>
+            A2A POC
+        </div>
+        <div class="tb-sep"></div>
+        <div class="tb-tag">Agent Coordination Platform</div>
+        <div class="tb-status">
+            <div class="status-pill active" id="st-orch">
+                <div class="status-dot on"></div>Orchestrator
+            </div>
+            <div class="status-pill active" id="st-flight">
+                <div class="status-dot on"></div>Flight Agent
+            </div>
+            <div class="status-pill active" id="st-hotel">
+                <div class="status-dot on"></div>Hotel Agent
+            </div>
+            <div class="tb-sep"></div>
+            <div class="status-pill active">
+                <div class="status-dot on"></div>PostgreSQL
+            </div>
+        </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div id="sidebar">
+        <div class="sb-section">
+            <div class="sb-label">Agent Status</div>
+            <div class="agent-item" id="agent-orch">
+                <div class="agent-indicator ai-orch" id="ind-orch"></div>
+                <div class="agent-info">
+                    <div class="agent-name">Orchestrator</div>
+                    <div class="agent-state" id="state-orch">Idle</div>
+                </div>
+            </div>
+            <div class="agent-item" id="agent-flight">
+                <div class="agent-indicator ai-idle" id="ind-flight"></div>
+                <div class="agent-info">
+                    <div class="agent-name">Flight Agent</div>
+                    <div class="agent-state" id="state-flight">Idle</div>
+                </div>
+            </div>
+            <div class="agent-item" id="agent-hotel">
+                <div class="agent-indicator ai-idle" id="ind-hotel"></div>
+                <div class="agent-info">
+                    <div class="agent-name">Hotel Agent</div>
+                    <div class="agent-state" id="state-hotel">Idle</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sb-section">
+            <div class="sb-label">Database</div>
+            <div class="db-block">
+                <div class="db-icon">🗄</div>
+                <div>
+                    <div class="db-label">PostgreSQL</div>
+                    <div class="db-sub" id="db-sub">localhost:5432 · a2a_poc</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-row">
+            <div class="stat-box">
+                <div class="stat-val" id="stat-tasks" style="color:var(--orch)">0</div>
+                <div class="stat-lbl">A2A Tasks</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-val" id="stat-msgs" style="color:var(--flight)">0</div>
+                <div class="stat-lbl">Messages</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-val" id="stat-results" style="color:var(--hotel)">0</div>
+                <div class="stat-lbl">Options</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-val" id="stat-writes" style="color:var(--user)">0</div>
+                <div class="stat-lbl">DB Writes</div>
+            </div>
+        </div>
+
+        <div style="flex:1"></div>
+
+        <div style="padding:14px 16px; border-top:1px solid var(--border)">
+            <div class="sb-label" style="margin-bottom:8px">Current Session</div>
+            <div style="font-size:10px;color:var(--muted)" id="session-id">Not started</div>
+        </div>
+    </div>
+
+    <!-- MAIN -->
+    <div id="main">
+        <div id="flow-viz">
+            <div class="viz-title">A2A Message Flow</div>
+            <div class="flow-agents">
+                <div class="fa-box" id="fa-orch">
+                    <div class="fa-role orch">Orchestrator</div>
+                    <div class="fa-name">Orchestrator</div>
+                    <div class="fa-task" id="fa-orch-task">LangGraph · Intent Parsing</div>
+                </div>
+                <div class="flow-arrow">
+                    <div class="arrow-line" id="arrow-of"></div>
+                    <div class="arrow-head">▶</div>
+                    <div class="arrow-lbl" id="arrow-of-lbl">A2A Task</div>
+                </div>
+                <div class="fa-box" id="fa-flight">
+                    <div class="fa-role flight">Flight Agent</div>
+                    <div class="fa-name">Flight Agent</div>
+                    <div class="fa-task" id="fa-flight-task">Search · Filter Flights</div>
+                </div>
+                <div class="flow-arrow">
+                    <div class="arrow-line" id="arrow-fh"></div>
+                    <div class="arrow-head">▶</div>
+                    <div class="arrow-lbl" id="arrow-fh-lbl">Arrival Time</div>
+                </div>
+                <div class="fa-box" id="fa-hotel">
+                    <div class="fa-role hotel">Hotel Agent</div>
+                    <div class="fa-name">Hotel Agent</div>
+                    <div class="fa-task" id="fa-hotel-task">Time Match · Hotel Search</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="chat-area"></div>
+
+        <div id="input-area">
+            <div class="input-wrap">
+                <textarea id="user-input" rows="1"
+                    placeholder="Type your trip request in English, for example: Book me a flight and hotel from Singapore to Shanghai on May 1, returning on May 4..."></textarea>
+                <button id="send-btn" onclick="handleSend()">↑</button>
+            </div>
+            <div class="input-hint">
+                <span class="hint-chip"
+                    onclick="quickFill('Book me a flight and hotel from Singapore to Shanghai on May 1, returning on May 4')">📋
+                    Standard Scenario</span>
+                <span class="hint-chip"
+                    onclick="quickFill('Book me a one-way flight from Bangkok to Beijing on June 10')">✈ One-Way
+                    Flight</span>
+                <span class="hint-chip" onclick="quickFill('Book me a flight from Thailand to China on June 10')">🌏
+                    Country-Level Route</span>
+                <span class="hint-chip"
+                    onclick="quickFill('Book me a flight and hotel from Bangkok to Beijing on June 10, returning on June 14')">🏨
+                    Flight + Hotel</span>
+                <span class="hint-chip" onclick="quickFill('Do you have any early morning flight options?')">🌅 Early
+                    Flight</span>
+                <span class="hint-chip" onclick="quickFill('Show me the cheapest option')">💸 Cheapest Option</span>
+                <span class="hint-chip" onclick="quickFill('I prefer Shanghai instead of Beijing')">🧭 Change
+                    Destination</span>
+                <span class="hint-chip" onclick="quickFill('I choose option 2, please confirm the booking')">✅ Confirm
+                    Booking</span>
+                <span class="hint-chip" onclick="resetAll()">🔄 Reset</span>
+            </div>
+            <div class="input-hint" style="margin-top:8px">
+                <span class="hint-chip" onclick="quickFill('Book me a flight from Singapore to China on June 10')">🇸🇬
+                    Singapore to China</span>
+                <span class="hint-chip"
+                    onclick="quickFill('Book me a round trip from Hong Kong to Bangkok on June 14, returning on June 15')">🔁
+                    Short Round Trip</span>
+                <span class="hint-chip"
+                    onclick="quickFill('I need a hotel after I arrive in Beijing on June 10 and I fly back on June 14')">🛏
+                    Hotel Timing Match</span>
+                <span class="hint-chip" onclick="quickFill('Find me a hotel in Beijing from June 10 to June 14')">🏙
+                    Hotel-Only Stay</span>
+                <span class="hint-chip"
+                    onclick="quickFill('Show me hotel options in Shanghai for June 10 to June 12')">🧳 Hotel-Only
+                    Shanghai</span>
+                <span class="hint-chip" onclick="quickFill('Summarize the best option for me')">📝 Summary
+                    Request</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOG PANEL -->
+    <div id="log-panel">
+        <div class="log-header">
+            <span>System Log</span>
+            <span class="log-clear" onclick="clearLog()">Clear</span>
+        </div>
+        <div id="log-stream"></div>
+        <div class="db-writes">
+            <div class="db-writes-title">PostgreSQL Write Log</div>
+            <div id="db-write-list"></div>
+        </div>
+    </div>
+
+    <script>
+        // ─── State ───
+        const state = {
+            sessionId: null,
+            taskCount: 0,
+            msgCount: 0,
+            resultCount: 0,
+            dbWrites: 0,
+            running: false,
+            selectedPlan: null,
+            plans: [],
+            intent: '',
+            chatHistory: []
+        };
+
+        // ─── Mock flight data ───
+        // Removed - now fetched from backend
+
+        // ─── Utilities ───
+        function now() {
+            return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+        function genId(prefix) {
+            return prefix + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+        }
+        function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+        function addHours(timeStr, h) {
+            const [hh, mm] = timeStr.split(':').map(Number);
+            const total = hh * 60 + mm + h * 60;
+            const nh = Math.floor(total / 60) % 24;
+            const nm = total % 60;
+            return `${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`;
+        }
+
+        // ─── Stats ───
+        function incStat(id, val = 1) {
+            const el = document.getElementById(id);
+            const cur = parseInt(el.textContent) + val;
+            el.textContent = cur;
+            el.style.transform = 'scale(1.15)';
+            setTimeout(() => el.style.transform = '', 200);
+            return cur;
+        }
+
+        // ─── Log ───
+        function addLog(type, actor, msg) {
+            const stream = document.getElementById('log-stream');
+            const div = document.createElement('div');
+            div.className = `log-entry le-${type}`;
+            div.innerHTML = `<span class="log-time">${now()}</span><span class="le-actor">[${actor}]</span><span class="le-msg">${msg}</span>`;
+            stream.appendChild(div);
+            stream.scrollTop = stream.scrollHeight;
+        }
+
+        function addDbWrite(table, op) {
+            const list = document.getElementById('db-write-list');
+            if (list.children.length >= 5) list.removeChild(list.firstChild);
+            const div = document.createElement('div');
+            div.className = 'db-write-item';
+            div.innerHTML = `<span class="dbw-table">${table}</span><span class="dbw-op">${op}</span><span class="dbw-status">✓ saved</span>`;
+            list.appendChild(div);
+            state.dbWrites++;
+            document.getElementById('stat-writes').textContent = state.dbWrites;
+            addLog('db', 'PostgreSQL', `INSERT INTO ${table} (${op})`);
+        }
+
+        // ─── Chat messages ───
+        function addMsg(type, sender, senderLabel, content, isHtml = false) {
+            const area = document.getElementById('chat-area');
+            const avClass = `msg-av-${type}`;
+            const senderClass = `msg-sender ${type}`;
+            const initials = { user: 'U', orch: 'O', flight: 'F', hotel: 'H', sys: 'S' }[type] || '·';
+            const div = document.createElement('div');
+            div.className = 'msg';
+            div.innerHTML = `
+    <div class="msg-avatar ${avClass}">${initials}</div>
+    <div class="msg-body">
+      <div class="msg-meta">
+        <span class="${senderClass}">${senderLabel}</span>
+        <span class="msg-time">${now()}</span>
+      </div>
+      <div class="msg-text">${isHtml ? content : escHtml(content)}</div>
+    </div>`;
+            area.appendChild(div);
+            area.scrollTop = area.scrollHeight;
+            state.msgCount++;
+            document.getElementById('stat-msgs').textContent = state.msgCount;
+        }
+
+        function escHtml(s) {
+            return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        // ─── Agent state ───
+        function setAgentState(agent, status, taskText) {
+            const states = {
+                orch: { ind: 'ind-orch', state: 'state-orch', item: 'agent-orch', fa: 'fa-orch', task: 'fa-orch-task' },
+                flight: { ind: 'ind-flight', state: 'state-flight', item: 'agent-flight', fa: 'fa-flight', task: 'fa-flight-task' },
+                hotel: { ind: 'ind-hotel', state: 'state-hotel', item: 'agent-hotel', fa: 'fa-hotel', task: 'fa-hotel-task' }
+            };
+            const s = states[agent];
+            const ind = document.getElementById(s.ind);
+            const stEl = document.getElementById(s.state);
+            const faTask = document.getElementById(s.task);
+
+            ind.className = 'agent-indicator';
+            stEl.className = 'agent-state';
+            document.getElementById(s.fa).className = 'fa-box';
+
+            if (status === 'busy') {
+                ind.classList.add(`ai-${agent}`, 'pulse');
+                stEl.classList.add('busy');
+                stEl.textContent = taskText || 'Working...';
+                document.getElementById(s.fa).classList.add('active', `${agent}-active`);
+                if (faTask) faTask.className = 'fa-task busy';
+            } else if (status === 'done') {
+                ind.classList.add(`ai-${agent}`);
+                stEl.classList.add('done');
+                stEl.textContent = taskText || 'Done';
+                if (faTask) faTask.className = 'fa-task done';
+            } else {
+                ind.classList.add('ai-idle');
+                stEl.textContent = taskText || 'Idle';
+                if (faTask) faTask.className = 'fa-task';
+            }
+        }
+
+        function setFlow(arrow, active, cls = '') {
+            const el = document.getElementById(arrow);
+            const lbl = document.getElementById(arrow + '-lbl');
+            el.className = 'arrow-line' + (active ? ` active-flow ${cls}` : '');
+            if (lbl) {
+                lbl.className = 'arrow-lbl' + (active ? ` active-lbl ${cls.replace('-flow', '-lbl')}` : '');
+            }
+        }
+
+        // ─── Main flow ───
+        async function runBookingFlow(userText) {
+            if (state.running) return;
+            state.running = true;
+            document.getElementById('send-btn').disabled = true;
+
+            // Session
+            state.sessionId = genId('sess');
+            document.getElementById('session-id').textContent = state.sessionId;
+            addLog('sys', 'System', `New session created: ${state.sessionId}`);
+            addDbWrite('sessions', `id=${state.sessionId}, status=active`);
+
+            // User message
+            addMsg('user', 'user', 'User', userText);
+            await sleep(400);
+            let assistantSummary = 'Search completed.';
+
+            // Call backend API
+            try {
+                addLog('sys', 'Frontend', 'Sending request to backend API...');
+                const response = await fetch('http://localhost:8000/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ user_input: userText, chat_history: state.chatHistory }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const combinedOptions = data.combined_options;
+                state.intent = data.intent || '';
+                assistantSummary = data.llm_summary || assistantSummary;
+
+                if (!combinedOptions || combinedOptions.length === 0) {
+                    addMsg('orch', 'orch', 'Orchestrator', data.llm_summary || 'No matching itinerary was found. Try adjusting the dates or destination.');
+                    addLog('sys', 'System', 'Backend returned no matching options');
+                } else {
+                    // Simulate agent states for UI
+                    setAgentState('orch', 'busy', 'Parsing intent...');
+                    await sleep(500);
+                    setAgentState('orch', 'done', 'Parsed');
+                    if (state.intent === 'hotel_only') {
+                        setAgentState('flight', 'idle', 'Skipped');
+                        setAgentState('hotel', 'busy', 'Searching hotels...');
+                        await sleep(500);
+                        setAgentState('hotel', 'done', 'Results ready');
+                    } else {
+                        setAgentState('flight', 'busy', 'Searching flights...');
+                        await sleep(500);
+                        setAgentState('flight', 'done', 'Results ready');
+                        setAgentState('hotel', 'busy', 'Matching hotels...');
+                        await sleep(500);
+                        setAgentState('hotel', 'done', 'Results ready');
+                    }
+
+                    // Build plans from backend data
+                    state.plans = combinedOptions.slice(0, 4).map((option, i) => ({
+                        outbound: option.outbound,
+                        return: option.return,
+                        hotel: option.hotel,
+                        planNum: i + 1
+                    }));
+                    state.resultCount = state.plans.length;
+                    document.getElementById('stat-results').textContent = state.resultCount;
+                    addDbWrite('results', `session_id=${state.sessionId}, combined_plans=${state.plans.length}`);
+
+                    // Render result cards
+                    const cardsHtml = state.plans.map(p => `
+    <div class="result-card" id="plan-${p.planNum}" onclick="selectPlan(${p.planNum})">
+      <div class="rc-header">
+                <span class="rc-num">Option ${p.planNum}</span>
+                <span class="rc-price">${state.intent === 'hotel_only' ? p.hotel.price : `${p.outbound.price} + ${p.hotel.price}`}</span>
+      </div>
+      <div class="rc-row">
+                <div ${state.intent === 'hotel_only' ? 'style="display:none"' : ''}>
+                    <div class="rc-item-label">✈ Outbound Flight</div>
+          <div class="rc-item-val">${p.outbound.flight_number} · ${p.outbound.airline}</div>
+                    <div class="rc-item-sub">Depart ${p.outbound.departure_time} → Arrive ${p.outbound.arrival_time} · ${p.outbound.duration}</div>
+        </div>
+                <div ${state.intent === 'hotel_only' ? 'style="display:none"' : ''}>
+                    <div class="rc-item-label">✈ Return Flight</div>
+          <div class="rc-item-val">${p.return.flight_number} · ${p.return.airline}</div>
+                    <div class="rc-item-sub">Depart ${p.return.departure_time} → Arrive ${p.return.arrival_time} · ${p.return.duration}</div>
+        </div>
+        <div>
+                                        <div class="rc-item-label">${state.intent === 'hotel_only' ? '🏨 Hotel Stay' : '🏨 Hotel'}</div>
+          <div class="rc-item-val">${p.hotel.name}</div>
+                                        <div class="rc-item-sub">${p.hotel.area} · Check-in ${p.hotel.checkin_time} · Check-out ${p.hotel.checkout_time} · ${p.hotel.stars}</div>
+        </div>
+      </div>
+    </div>`).join('');
+
+                    addMsg('orch', 'orch', 'Orchestrator',
+                        `<span class="msg-tag tag-result">Results</span> ${escHtml(data.llm_summary || `I found ${state.plans.length} itinerary options for you.`)}<div class="result-cards" style="margin-top:10px">${cardsHtml}</div>`, true);
+
+                    addLog('sys', 'System', `Flow completed. Generated ${state.plans.length} options and waiting for user selection.`);
+                }
+            } catch (error) {
+                addMsg('sys', 'sys', 'System', `Failed to connect to backend: ${error.message}`);
+                addLog('sys', 'Frontend', `API call failed: ${error.message}`);
+            }
+
+            state.running = false;
+            document.getElementById('send-btn').disabled = false;
+            state.chatHistory.push({ role: 'user', content: userText });
+            state.chatHistory.push({ role: 'assistant', content: assistantSummary });
+        }
+
+        function selectPlan(num) {
+            document.querySelectorAll('.result-card').forEach(c => c.classList.remove('selected'));
+            const card = document.getElementById(`plan-${num}`);
+            if (card) card.classList.add('selected');
+            state.selectedPlan = num;
+            const p = state.plans[num - 1];
+            addLog('sys', 'User', `Selected option ${num}: ${p.outbound.flight_number} + ${p.hotel.name}`);
+            if (state.intent === 'hotel_only') {
+                addMsg('orch', 'orch', 'Orchestrator',
+                    `Option ${num} selected: <strong>${p.hotel.name}</strong> in ${p.hotel.area}, from <strong>${p.hotel.checkin_time}</strong> to <strong>${p.hotel.checkout_time}</strong>. Type <strong>confirm booking</strong> to proceed, or continue refining the request.`, true);
+            } else {
+                addMsg('orch', 'orch', 'Orchestrator',
+                    `Option ${num} selected: <strong>${p.outbound.flight_number}</strong> ${p.outbound.departure_time}→${p.outbound.arrival_time} + <strong>${p.hotel.name}</strong> (check-in ${p.hotel.checkin_time}), return <strong>${p.return.flight_number}</strong> ${p.return.departure_time}. Type <strong>confirm booking</strong> to proceed, or continue refining the request.`, true);
+            }
+        }
+
+        async function handleConfirm() {
+            if (!state.selectedPlan) {
+                addMsg('orch', 'orch', 'Orchestrator', 'Please select an itinerary option first, then confirm the booking.');
+                return;
+            }
+            const p = state.plans[state.selectedPlan - 1];
+            setAgentState('orch', 'busy', 'Processing booking...');
+            addLog('orch', 'Orchestrator', `Processing booking confirmation for option ${state.selectedPlan}`);
+            await sleep(800);
+            addDbWrite('results', `id=${state.sessionId}, selected=plan_${state.selectedPlan}, status=confirmed`);
+            setAgentState('orch', 'done', 'Booked');
+            if (state.intent === 'hotel_only') {
+                addMsg('sys', 'sys', 'System',
+                    `<span class="msg-tag tag-result">✓ Booking confirmed</span> Hotel <strong>${p.hotel.name}</strong> has been reserved from ${p.hotel.checkin_time} to ${p.hotel.checkout_time}. The order has been written to the database and session ${state.sessionId} is archived.`, true);
+            } else {
+                addMsg('sys', 'sys', 'System',
+                    `<span class="msg-tag tag-result">✓ Booking confirmed</span> Outbound flight <strong>${p.outbound.flight_number}</strong> is locked, <strong>${p.hotel.name}</strong> is reserved, and return flight <strong>${p.return.flight_number}</strong> is locked. The order has been written to the database and session ${state.sessionId} is archived.`, true);
+            }
+            addLog('sys', 'System', 'Session archived. All A2A records have been persisted to PostgreSQL.');
+        }
+
+        // ─── Input handling ───
+        async function handleSend() {
+            const input = document.getElementById('user-input');
+            const text = input.value.trim();
+            if (!text) return;
+            input.value = '';
+            input.style.height = 'auto';
+
+            const lower = text.toLowerCase();
+            if (lower.includes('确认') || lower.includes('confirm')) {
+                addMsg('user', 'user', 'User', text);
+                await handleConfirm();
+            } else if (
+                state.plans.length > 0 &&
+                (
+                    lower.includes('选') ||
+                    lower.includes('choose') ||
+                    lower.includes('select') ||
+                    lower.match(/方案\s*[1-4]/) ||
+                    lower.match(/option\s*[1-4]/)
+                )
+            ) {
+                addMsg('user', 'user', 'User', text);
+                const m = text.match(/[1-4]/);
+                if (m) selectPlan(parseInt(m[0]));
+                else addMsg('orch', 'orch', 'Orchestrator', 'Please specify an option number from 1 to 4, for example: I choose option 2.');
+            } else if (lower.includes('重置') || lower.includes('reset') || lower.includes('重新')) {
+                resetAll();
+            } else {
+                await runBookingFlow(text);
+            }
+        }
+
+        function quickFill(text) {
+            const input = document.getElementById('user-input');
+            input.value = text;
+            input.focus();
+        }
+
+        document.getElementById('user-input').addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+        });
+        document.getElementById('user-input').addEventListener('input', function () {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+        });
+
+        function clearLog() {
+            document.getElementById('log-stream').innerHTML = '';
+        }
+
+        function resetAll() {
+            document.getElementById('chat-area').innerHTML = '';
+            document.getElementById('log-stream').innerHTML = '';
+            document.getElementById('db-write-list').innerHTML = '';
+            state.sessionId = null; state.taskCount = 0; state.msgCount = 0;
+            state.resultCount = 0; state.dbWrites = 0; state.running = false;
+            state.selectedPlan = null; state.plans = []; state.intent = ''; state.chatHistory = [];
+            ['stat-tasks', 'stat-msgs', 'stat-results', 'stat-writes'].forEach(id => {
+                document.getElementById(id).textContent = '0';
+            });
+            document.getElementById('session-id').textContent = 'Not started';
+            setAgentState('orch', 'idle', 'Idle');
+            setAgentState('flight', 'idle', 'Idle');
+            setAgentState('hotel', 'idle', 'Idle');
+            setFlow('arrow-of', false);
+            setFlow('arrow-fh', false);
+            addLog('sys', 'System', 'System reset. Waiting for a new session.');
+        }
+
+        // ─── Boot ───
+        addLog('sys', 'System', 'A2A POC frontend initialized.');
+        addLog('orch', 'Orchestrator', 'LangGraph StateGraph ready.');
+        addLog('flight', 'FlightAgent', 'AgentCard registered and listening for A2A tasks.');
+        addLog('hotel', 'HotelAgent', 'AgentCard registered and listening for A2A tasks.');
+        addLog('db', 'PostgreSQL', 'Connection pool established: localhost:5432/a2a_poc');
+        addMsg('orch', 'orch', 'Orchestrator', 'System ready. Enter a travel request, for example: <em>Book me a flight and hotel from Singapore to Shanghai on May 1, returning on May 4.</em> or <em>Find me a hotel in Beijing from June 10 to June 14.</em>', true);
+    </script>
+</body>
+
+</html>
