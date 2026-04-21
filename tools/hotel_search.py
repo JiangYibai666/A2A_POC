@@ -43,7 +43,7 @@ class HotelSearchTool(BaseTool):
     ) -> str:
         try:
             data_path = Path(__file__).resolve().parents[1] / "mock_data" / "hotels.json"
-            with open(data_path, "r", encoding="utf-8") as f:
+            with open(data_path, "r", encoding="utf-8-sig") as f:
                 hotels = json.load(f)
 
             arrive_dt = datetime.fromisoformat(arrive_time)

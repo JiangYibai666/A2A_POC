@@ -40,7 +40,7 @@ class FlightSearchTool(BaseTool):
             destination_set = {c.upper() for c in destination_candidates}
 
             data_path = Path(__file__).resolve().parents[1] / "mock_data" / "flights.json"
-            with open(data_path, "r", encoding="utf-8") as f:
+            with open(data_path, "r", encoding="utf-8-sig") as f:
                 flights = json.load(f)
 
             outbound = [

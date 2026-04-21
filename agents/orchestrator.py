@@ -186,6 +186,28 @@ async def call_flight_agent(state: OrchestratorState) -> OrchestratorState:
     )
     result = await router.send_task(task)
     state['flight_options'] = json.loads(result)
+
+    # For flight_only intent, call_hotel is skipped so build combined_options here.
+    if state.get('intent') == 'flight_only':
+        outbound_flights = state['flight_options'].get('outbound', [])
+        return_flights = state['flight_options'].get('return', [])
+        state['combined_options'] = []
+        no_hotel = {'name': 'No hotel selected', 'area': '-', 'stars': '-',
+                    'checkin_time': '-', 'checkout_time': '-', 'price': 0}
+        no_return = {'flight_number': 'One-way', 'airline': '-',
+                     'departure_time': '-', 'arrival_time': '-', 'duration': '-', 'price': 0}
+        if return_flights:
+            for outbound in outbound_flights:
+                for ret in return_flights:
+                    state['combined_options'].append(
+                        {'outbound': outbound, 'return': ret, 'hotel': no_hotel}
+                    )
+        else:
+            for outbound in outbound_flights:
+                state['combined_options'].append(
+                    {'outbound': outbound, 'return': no_return, 'hotel': no_hotel}
+                )
+
     return state
 
 async def call_hotel_agent(state: OrchestratorState) -> OrchestratorState:
