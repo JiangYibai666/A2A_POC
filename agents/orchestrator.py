@@ -10,6 +10,7 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import END, StateGraph
 
+#local protocols and router
 from a2a.protocol import Message, MessagePart, Task
 from a2a.router import router
 from tools.hotel_search import HotelSearchTool
@@ -18,7 +19,7 @@ load_dotenv()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# State
+# State--Workflow memory
 # ─────────────────────────────────────────────────────────────────────────────
 class OrchestratorState(TypedDict):
     user_input: str
@@ -33,7 +34,7 @@ class OrchestratorState(TypedDict):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# LLM factory
+# LLM factory--A new instance is created each time LLM needs to be called.
 # ─────────────────────────────────────────────────────────────────────────────
 def _get_llm() -> ChatGoogleGenerativeAI:
     return ChatGoogleGenerativeAI(
@@ -44,7 +45,7 @@ def _get_llm() -> ChatGoogleGenerativeAI:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Prompts
+# Prompts--Tell the LLM how to convert the user's natural language into structured parameters
 # ─────────────────────────────────────────────────────────────────────────────
 _INTENT_SYSTEM = """\
 You are the intent parsing module for a travel booking assistant. Use the latest user message plus chat history to extract booking parameters.
@@ -91,6 +92,7 @@ async def llm_parse_intent(state: OrchestratorState) -> OrchestratorState:
     today = datetime.now().strftime("%Y-%m-%d")
     system_msg = _INTENT_SYSTEM.format(today=today)
 
+  # Build a message list: history + system prompts + current user input
     messages: List = [SystemMessage(content=system_msg)]
     for h in (state.get("chat_history") or []):
         if h["role"] == "user":
@@ -99,6 +101,7 @@ async def llm_parse_intent(state: OrchestratorState) -> OrchestratorState:
             messages.append(AIMessage(content=h["content"]))
     messages.append(HumanMessage(content=state["user_input"]))
 
+  # call Gemini LLM
     response = await llm.ainvoke(messages)
     raw = response.content.strip()
 
@@ -107,6 +110,7 @@ async def llm_parse_intent(state: OrchestratorState) -> OrchestratorState:
         parts = raw.split("```")
         raw = parts[1].lstrip("json").strip() if len(parts) > 1 else raw
 
+#  Attempt to parse JSON; return a default value if it fails.
     try:
         parsed = json.loads(raw)
     except json.JSONDecodeError:
@@ -118,7 +122,7 @@ async def llm_parse_intent(state: OrchestratorState) -> OrchestratorState:
             "return_date": None,
             "hotel_city": None,
         }
-
+    # renew state
     state["parsed_params"] = parsed
     state["intent"] = parsed.get("intent", "flight_and_hotel")
     return state

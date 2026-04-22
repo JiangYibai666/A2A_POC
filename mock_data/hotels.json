@@ -1,11 +1,11 @@
-﻿[
+[
     {
         "name": "The St. Regis Shanghai",
         "city": "SHA",
         "area": "The Bund",
         "stars": "★★★★★",
-        "checkin_time": "2026-05-01T12:00:00+08:00",
-        "checkout_time": "2026-05-04T10:00:00+08:00",
+        "checkin_time": "2025-05-01T12:00:00+08:00",
+        "checkout_time": "2025-05-04T10:00:00+08:00",
         "price": "CNY 300/night"
     },
     {
@@ -13,8 +13,8 @@
         "city": "SHA",
         "area": "Lujiazui",
         "stars": "★★★★★",
-        "checkin_time": "2026-05-01T16:00:00+08:00",
-        "checkout_time": "2026-05-04T10:00:00+08:00",
+        "checkin_time": "2025-05-01T16:00:00+08:00",
+        "checkout_time": "2025-05-04T10:00:00+08:00",
         "price": "CNY 350/night"
     },
     {
@@ -22,8 +22,8 @@
         "city": "SHA",
         "area": "Jing'an District",
         "stars": "★★★★",
-        "checkin_time": "2026-05-01T14:00:00+08:00",
-        "checkout_time": "2026-05-04T10:00:00+08:00",
+        "checkin_time": "2025-05-01T14:00:00+08:00",
+        "checkout_time": "2025-05-04T10:00:00+08:00",
         "price": "CNY 250/night"
     },
     {
@@ -31,8 +31,8 @@
         "city": "SHA",
         "area": "Huangpu District",
         "stars": "★★★★",
-        "checkin_time": "2026-05-02T15:00:00+08:00",
-        "checkout_time": "2026-05-05T12:00:00+08:00",
+        "checkin_time": "2025-05-02T15:00:00+08:00",
+        "checkout_time": "2025-05-05T12:00:00+08:00",
         "price": "CNY 320/night"
     },
     {
@@ -40,8 +40,8 @@
         "city": "PEK",
         "area": "Dongcheng District",
         "stars": "★★★★★",
-        "checkin_time": "2026-05-01T15:00:00+08:00",
-        "checkout_time": "2026-05-04T12:00:00+08:00",
+        "checkin_time": "2025-05-01T15:00:00+08:00",
+        "checkout_time": "2025-05-04T12:00:00+08:00",
         "price": "CNY 280/night"
     },
     {
@@ -49,8 +49,8 @@
         "city": "HKG",
         "area": "Central",
         "stars": "★★★★★",
-        "checkin_time": "2026-05-01T14:00:00+08:00",
-        "checkout_time": "2026-05-04T11:00:00+08:00",
+        "checkin_time": "2025-05-01T14:00:00+08:00",
+        "checkout_time": "2025-05-04T11:00:00+08:00",
         "price": "CNY 420/night"
     },
     {
@@ -58,8 +58,8 @@
         "city": "BKK",
         "area": "Sukhumvit",
         "stars": "★★★★",
-        "checkin_time": "2026-06-10T15:00:00+07:00",
-        "checkout_time": "2026-06-15T12:00:00+07:00",
+        "checkin_time": "2025-06-10T15:00:00+07:00",
+        "checkout_time": "2025-06-15T12:00:00+07:00",
         "price": "CNY 220/night"
     },
     {
@@ -67,8 +67,8 @@
         "city": "SFO",
         "area": "Financial District",
         "stars": "★★★★",
-        "checkin_time": "2026-05-02T15:00:00-07:00",
-        "checkout_time": "2026-05-05T12:00:00-07:00",
+        "checkin_time": "2025-05-02T15:00:00-07:00",
+        "checkout_time": "2025-05-05T12:00:00-07:00",
         "price": "CNY 340/night"
     },
     {
@@ -76,8 +76,8 @@
         "city": "PEK",
         "area": "Wangfujing",
         "stars": "★★★★★",
-        "checkin_time": "2026-06-10T14:00:00+08:00",
-        "checkout_time": "2026-06-15T12:00:00+08:00",
+        "checkin_time": "2025-06-10T14:00:00+08:00",
+        "checkout_time": "2025-06-15T12:00:00+08:00",
         "price": "CNY 360/night"
     },
     {
@@ -85,8 +85,8 @@
         "city": "PEK",
         "area": "CBD",
         "stars": "★★★★★",
-        "checkin_time": "2026-06-10T15:30:00+08:00",
-        "checkout_time": "2026-06-14T11:00:00+08:00",
+        "checkin_time": "2025-06-10T15:30:00+08:00",
+        "checkout_time": "2025-06-14T11:00:00+08:00",
         "price": "CNY 390/night"
     },
     {
@@ -94,8 +94,8 @@
         "city": "SHA",
         "area": "North Bund",
         "stars": "★★★★★",
-        "checkin_time": "2026-06-10T14:00:00+08:00",
-        "checkout_time": "2026-06-14T11:30:00+08:00",
+        "checkin_time": "2025-06-10T14:00:00+08:00",
+        "checkout_time": "2025-06-14T11:30:00+08:00",
         "price": "CNY 410/night"
     },
     {
@@ -103,8 +103,8 @@
         "city": "HKG",
         "area": "Central",
         "stars": "★★★★★",
-        "checkin_time": "2026-06-10T15:00:00+08:00",
-        "checkout_time": "2026-06-14T12:00:00+08:00",
+        "checkin_time": "2025-06-10T15:00:00+08:00",
+        "checkout_time": "2025-06-14T12:00:00+08:00",
         "price": "CNY 460/night"
     },
     {
@@ -112,8 +112,8 @@
         "city": "BKK",
         "area": "Chao Phraya River",
         "stars": "★★★★★",
-        "checkin_time": "2026-06-10T13:30:00+07:00",
-        "checkout_time": "2026-06-15T11:00:00+07:00",
+        "checkin_time": "2025-06-10T13:30:00+07:00",
+        "checkout_time": "2025-06-15T11:00:00+07:00",
         "price": "CNY 330/night"
     },
     {
@@ -121,8 +121,8 @@
         "city": "BKK",
         "area": "Siam",
         "stars": "★★★★",
-        "checkin_time": "2026-06-10T16:00:00+07:00",
-        "checkout_time": "2026-06-14T10:00:00+07:00",
+        "checkin_time": "2025-06-10T16:00:00+07:00",
+        "checkout_time": "2025-06-14T10:00:00+07:00",
         "price": "CNY 240/night"
     },
     {
@@ -130,8 +130,8 @@
         "city": "SIN",
         "area": "Marina Bay",
         "stars": "★★★★",
-        "checkin_time": "2026-06-10T14:00:00+08:00",
-        "checkout_time": "2026-06-16T11:00:00+08:00",
+        "checkin_time": "2025-06-10T14:00:00+08:00",
+        "checkout_time": "2025-06-16T11:00:00+08:00",
         "price": "CNY 290/night"
     },
     {
@@ -139,8 +139,8 @@
         "city": "SIN",
         "area": "Civic District",
         "stars": "★★★★★",
-        "checkin_time": "2026-06-10T15:00:00+08:00",
-        "checkout_time": "2026-06-14T12:00:00+08:00",
+        "checkin_time": "2025-06-10T15:00:00+08:00",
+        "checkout_time": "2025-06-14T12:00:00+08:00",
         "price": "CNY 520/night"
     }
 ]

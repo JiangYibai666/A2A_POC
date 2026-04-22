@@ -11,7 +11,6 @@ async def handle_task(task) -> str:
     return_date = params.get("return_date")
 
     # Call the tool directly — the orchestrator has already parsed all parameters,
-    # so going through an LLM ReAct agent adds no value and introduces unreliability.
     tool = FlightSearchTool()
     return tool._run(
         origin_candidates=origin_candidates,
