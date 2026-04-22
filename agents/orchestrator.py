@@ -139,6 +139,7 @@ def _route_after_intent(state: OrchestratorState) -> str:
         return "llm_summarize"
     return "call_flight"  # flight_only or flight_and_hotel
 
+# Return the name of the next node.
 
 def _route_after_flight(state: OrchestratorState) -> str:
     if state.get("intent") == "flight_only":
@@ -157,11 +158,13 @@ CITY_TIMEZONE_MAP = {
 
 
 def _hotel_only_query_from_params(params: Dict[str, Any]) -> Dict[str, Any]:
+    # Determine the target city (priority: explicitly specified > destination_candidates first > default SHA)
     hotel_city = (
         params.get("hotel_city")
         or (params.get("destination_candidates") or [None])[0]
         or "SHA"
     )
+    # Confirm check-in/check-out dates
     checkin_date = params.get("departure_date") or datetime.now().strftime("%Y-%m-%d")
     checkout_date = params.get("return_date")
     if not checkout_date:
@@ -169,7 +172,9 @@ def _hotel_only_query_from_params(params: Dict[str, Any]) -> Dict[str, Any]:
             datetime.fromisoformat(checkin_date) + timedelta(days=3)
         ).strftime("%Y-%m-%d")
 
+    # Get time zone suffix
     timezone_suffix = CITY_TIMEZONE_MAP.get(hotel_city, "+08:00")
+    # Construct the complete query object
     return {
         "city": hotel_city,
         "arrive_time": f"{checkin_date}T12:00:00{timezone_suffix}",
@@ -178,8 +183,12 @@ def _hotel_only_query_from_params(params: Dict[str, Any]) -> Dict[str, Any]:
         "checkout_buffer_hours": 4,
     }
 
+# ─────────────────────────────────────────────────────────────────────────────
+# call flight agent
+# ─────────────────────────────────────────────────────────────────────────────
 
 async def call_flight_agent(state: OrchestratorState) -> OrchestratorState:
+    # Construct the task object: target = flight_agent, data = parsed_params
     task = Task(
         sender='orchestrator',
         receiver='flight_agent',
@@ -188,6 +197,7 @@ async def call_flight_agent(state: OrchestratorState) -> OrchestratorState:
             parts=[MessagePart(text='Search flights', metadata=state['parsed_params'])]
         )
     )
+    # Send the task via router and wait for the result.
     result = await router.send_task(task)
     state['flight_options'] = json.loads(result)
 
@@ -200,12 +210,15 @@ async def call_flight_agent(state: OrchestratorState) -> OrchestratorState:
                     'checkin_time': '-', 'checkout_time': '-', 'price': 0}
         no_return = {'flight_number': 'One-way', 'airline': '-',
                      'departure_time': '-', 'arrival_time': '-', 'duration': '-', 'price': 0}
+        
+        # If there is a return flight, combine all round-trip flights.
         if return_flights:
             for outbound in outbound_flights:
                 for ret in return_flights:
                     state['combined_options'].append(
                         {'outbound': outbound, 'return': ret, 'hotel': no_hotel}
                     )
+         # Otherwise, each outbound flight will be assigned a "one-way" reservation.
         else:
             for outbound in outbound_flights:
                 state['combined_options'].append(
@@ -213,6 +226,10 @@ async def call_flight_agent(state: OrchestratorState) -> OrchestratorState:
                 )
 
     return state
+
+# ─────────────────────────────────────────────────────────────────────────────
+# call hotel agent
+# ─────────────────────────────────────────────────────────────────────────────
 
 async def call_hotel_agent(state: OrchestratorState) -> OrchestratorState:
     if state.get("intent") == "hotel_only":
@@ -240,6 +257,7 @@ async def call_hotel_agent(state: OrchestratorState) -> OrchestratorState:
         state['hotel_options'] = hotels if isinstance(hotels, list) else []
         state['combined_options'] = []
 
+        # Create "virtual flights" (placeholders) for each hotel
         for hotel in state['hotel_options']:
             state['combined_options'].append({
                 'outbound': {
@@ -323,6 +341,7 @@ async def call_hotel_agent(state: OrchestratorState) -> OrchestratorState:
             })
         return state
 
+    # Round-trip flights and hotel (normal situation)
     for outbound in outbound_flights:
         for return_flight in return_flights:
             hotel_query = {
@@ -332,6 +351,7 @@ async def call_hotel_agent(state: OrchestratorState) -> OrchestratorState:
                 'checkin_window_hours': 3,
                 'checkout_buffer_hours': 1
             }
+            # For this flight, search for hotels
             task = Task(
                 sender='orchestrator',
                 receiver='hotel_agent',
@@ -342,6 +362,7 @@ async def call_hotel_agent(state: OrchestratorState) -> OrchestratorState:
             )
             result = await router.send_task(task)
             hotels = json.loads(result)
+            # Pair each hotel with the flight
             state['hotel_options'].extend(hotels)
             for hotel in hotels:
                 state['combined_options'].append({
@@ -350,6 +371,7 @@ async def call_hotel_agent(state: OrchestratorState) -> OrchestratorState:
                     'hotel': hotel
                 })
 
+            # If no hotels are listed, add a "No match" placeholder.
             if not hotels:
                 state['combined_options'].append({
                     'outbound': outbound,
@@ -377,6 +399,7 @@ async def llm_summarize(state: OrchestratorState) -> OrchestratorState:
     intent = state.get("intent", "flight_and_hotel")
     params = state.get("parsed_params") or {}
 
+    # Scenario A: No results
     if not combined:
         prompt = (
             f"User request intent={intent}, "
@@ -386,17 +409,20 @@ async def llm_summarize(state: OrchestratorState) -> OrchestratorState:
             f"departure_date={params.get('departure_date')}. "
             f"No matching results were found. Please provide a friendly explanation and next-step suggestions."
         )
+    # Scenario B: Results are available; extract the first 3 options to create a summary.
     else:
         snippets = []
         for i, opt in enumerate(combined[:3], 1):
             ob = opt.get("outbound", {})
             rt = opt.get("return", {})
             ht = opt.get("hotel", {})
+            # Pure Hotel Format
             if intent == "hotel_only":
                 line = (
                     f"Option {i}: hotel {ht.get('name','')} in {ht.get('area','')}, "
                     f"check-in {ht.get('checkin_time','')[:10]}, checkout {ht.get('checkout_time','')[:10]}"
                 )
+            # flight + hotel format
             else:
                 line = f"Option {i}: {ob.get('flight_number','')} departs on {ob.get('departure_time','')[:10]}"
                 if rt.get("flight_number") and rt.get("flight_number") != "One-way":
@@ -421,13 +447,16 @@ async def llm_summarize(state: OrchestratorState) -> OrchestratorState:
 # Graph with conditional routing
 # ─────────────────────────────────────────────────────────────────────────────
 graph = StateGraph(OrchestratorState)
+# Add 4 nodes
 graph.add_node("llm_parse_intent", llm_parse_intent)
 graph.add_node("call_flight", call_flight_agent)
 graph.add_node("call_hotel", call_hotel_agent)
 graph.add_node("llm_summarize", llm_summarize)
 
+# Setting up an entry point
 graph.set_entry_point("llm_parse_intent")
 
+# Conditional edge: after intent resolution
 graph.add_conditional_edges(
     "llm_parse_intent",
     _route_after_intent,
@@ -437,7 +466,7 @@ graph.add_conditional_edges(
         "llm_summarize": "llm_summarize",
     },
 )
-
+# Conditional side: After flight search
 graph.add_conditional_edges(
     "call_flight",
     _route_after_flight,
@@ -446,8 +475,9 @@ graph.add_conditional_edges(
         "llm_summarize": "llm_summarize",
     },
 )
-
+# Unconditional edge: Hotel search always includes summary
 graph.add_edge("call_hotel", "llm_summarize")
+# Unconditional edge: Ends after summary
 graph.add_edge("llm_summarize", END)
-
+# Compile into an executable graph
 orchestrator_graph = graph.compile()
